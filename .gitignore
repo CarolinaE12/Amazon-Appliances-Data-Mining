@@ -1,0 +1,9 @@
+# Ignorar el data set de Amazon
+Electronics.jsonl.gz
+*.jsonl.gz
+*.parquet
+*.json
+# Ignorar carpetas temporales de Python
+__pycache__/
+.venv/
+.env
