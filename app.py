@@ -3,7 +3,7 @@ import pandas as pd
 app = Flask(__name__)   
 
 def cargar_datos():
-    archivo = "Electronics.jsonl.gz"
+    archivo = "data/Electronics.jsonl.gz"
     df = pd.read_json(archivo, lines=True, compression='gzip', nrows=100)
     return df[['rating', 'title', 'text']]
 
