@@ -10,3 +10,17 @@ Análisis de Sentimiento Crítico: Filtrado de experiencias negativas para ident
 Clasificación de Fallos: Categorización automática de problemas (daño físico, fallas eléctricas, errores de sensores).
 
 Procesamiento Eficiente: Implementación mediante Streaming y lectura de archivos JSONL.GZ para manejar grandes volúmenes de datos (6GB+) sin saturar la memoria local.
+
+## Dataset
+
+Este proyecto utiliza el dataset:
+
+Amazon Reviews 2023
+
+Disponible en:
+https://huggingface.co/datasets/McAuley-Lab/Amazon-Reviews-2023
+https://amazon-reviews-2023.github.io/
+Debido a su gran tamaño, el dataset no se incluye en este repositorio.
+Debe descargarse manualmente y ubicarse en la carpeta:
+data/
+
