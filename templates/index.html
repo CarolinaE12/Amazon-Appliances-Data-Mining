@@ -5,13 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Minería de Datos</title>
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}?v=3">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}?v=5">
 </head>
 
 <body>
 
 <div class="container">
 
+    <!-- Sidebar -->
     <aside class="sidebar">
         <h2>Dashboard</h2>
         <ul>
@@ -22,58 +23,93 @@
         </ul>
     </aside>
 
+    <!-- Main -->
     <main class="main">
 
+        <!-- Navbar -->
         <header class="navbar">
-            <h1 class="neon-title">Análisis de Patrones de Falla</h1>
+            <h1 class="neon-title">
+                Análisis de Patrones de Falla en Productos Electrónicos
+            </h1>
         </header>
 
-
+        <!-- Cards -->
         <section class="cards">
             <div class="card">
-                <h3>Métrica 1</h3>
-                <p>Dato ejemplo</p>
+                <h3>Promedio Rating</h3>
+                <p>{{ resumen.promedio_rating }}</p>
             </div>
 
             <div class="card">
-                <h3>Métrica 2</h3>
-                <p>Dato ejemplo</p>
+                <h3>Total Reviews</h3>
+                <p>{{ resumen.total_reviews }}</p>
             </div>
 
             <div class="card">
-                <h3>Métrica 3</h3>
-                <p>Dato ejemplo</p>
+                <h3>% Fallas</h3>
+                <p>{{ resumen.porcentaje_fallas }}%</p>
             </div>
         </section>
 
+        <!-- Gráfico -->
+        <section class="section">
+            <h3>Gráfico de análisis</h3>
 
-        <section class="chart">
-            <div class="chart-box">
-                <p>Gráfico aquí</p>
+            <div class="panel">
+                <div class="chart-box">
+                    <p>Próximamente: gráfico de fallas vs rating</p>
+                </div>
             </div>
         </section>
 
-        <section class="descripcion">
+        <!-- Tabla organizada -->
+        <section class="section">
+            <h3>Reseñas de usuarios</h3>
+
+            <div class="panel panel-scroll">
+                <table>
+                    <tr>
+                        <th>Rating</th>
+                        <th>Título</th>
+                        <th>Texto</th>
+                    </tr>
+
+                    {% for d in muestra %}
+                    <tr>
+                        <td>{{ d.rating }}</td>
+                        <td>{{ d.title }}</td>
+                        <td>{{ d.text[:80] }}...</td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </section>
+
+        <!-- Descripción -->
+        <section class="descripcion section">
             <p>
                 Este proyecto tiene como objetivo analizar patrones de falla en electrodomésticos 
-                utilizando datos de reseñas de Amazon. En esta fase se está construyendo la 
-                interfaz del dashboard.
+                utilizando datos de reseñas de Amazon mediante técnicas de minería de datos.
             </p>
-       <section class="referencias">
-    <h3>Referencias</h3>
+        </section>
 
-    <div class="ref-card">
-        <p>
-            Hou, Y., Li, J., He, Z., Yan, A., Chen, X., & McAuley, J. (2024).
-            <strong>Bridging Language and Items for Retrieval and Recommendation.</strong>
-            arXiv:2403.03952
-        </p>
-    </div>
+        <!-- Referencias -->
+        <section class="referencias section">
+            <h3>Referencias</h3>
 
-    <p class="nota">
-        Dataset: Amazon Reviews 2023
-    </p>
-</section>
+            <div class="ref-card">
+                <p>
+                    Hou, Y., Li, J., He, Z., Yan, A., Chen, X., & McAuley, J. (2024).
+                    <strong>Bridging Language and Items for Retrieval and Recommendation.</strong>
+                    arXiv:2403.03952
+                </p>
+            </div>
+
+            <p class="nota">
+                Dataset: Amazon Reviews 2023
+            </p>
+        </section>
+
     </main>
 
 </div>

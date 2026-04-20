@@ -5,12 +5,10 @@ body {
     color: white;
 }
 
-
 .container {
     display: flex;
     min-height: 100vh;
 }
-
 
 .sidebar {
     width: 240px;
@@ -26,8 +24,6 @@ body {
     padding: 0;
     margin: 0;
 }
-
-
 .sidebar li {
     list-style: none;
     margin: 12px 0;
@@ -136,8 +132,50 @@ of this software and associated documentation files...
         0 0 20px rgba(139,92,246,0.2),
         0 10px 25px rgba(0,0,0,0.5);
 }
+/* Secciones */
+.section {
+    margin-top: 40px;
+}
 
+/* Título de sección */
+.section h3 {
+    margin-bottom: 15px;
+    color: #38bdf8;
+}
 
+/* Contenedor tipo tarjeta grande */
+.panel {
+    background: rgba(15, 23, 42, 0.8);
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 
+        0 0 20px rgba(56,189,248,0.1),
+        0 10px 30px rgba(0,0,0,0.6);
+}
+
+/* Tabla */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+th {
+    text-align: left;
+    color: #38bdf8;
+    padding-bottom: 10px;
+}
+
+td {
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+/* Scroll bonito */
+.panel-scroll {
+    max-height: 250px;
+    overflow-y: auto;
+}
 .referencias {
     margin-top: 40px;
 }

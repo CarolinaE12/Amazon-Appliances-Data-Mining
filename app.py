@@ -1,16 +1,17 @@
 from flask import Flask, render_template
-import pandas as pd
-app = Flask(__name__)   
+import json
 
-#def cargar_datos():
-#   archivo = "data/Electronics.jsonl.gz"
-#   df = pd.read_json(archivo, lines=True, compression='gzip', nrows=100)
-#    return []
+app = Flask(__name__)
 
 @app.route("/")
 def index():
-    datos = []
-    return render_template("index.html", datos=datos)
+    with open("data/resumen.json") as f:
+        resumen = json.load(f)[0]
+
+    with open("data/muestra.json") as f:
+        muestra = json.load(f)
+
+    return render_template("index.html", resumen=resumen, muestra=muestra)
 
 if __name__ == "__main__":
     app.run(debug=True)
