@@ -10,10 +10,18 @@ body {
     min-height: 100vh;
 }
 
+.explicacion {
+    text-align: justify;
+    flex: 1;
+    padding: 30px;
+    background: rgba(15, 23, 42, 0.8);
+    border-radius: 15px;
+}
 .sidebar {
     width: 240px;
     padding: 20px;
     background: rgba(15, 23, 42, 0.9);
+    border-radius: 15px;
 }
 
 .sidebar h2 {

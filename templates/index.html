@@ -3,38 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <title>Minería de Datos</title>
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}?v=5">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 
 <body>
 
 <div class="container">
 
-    <!-- Sidebar -->
     <aside class="sidebar">
         <h2>Dashboard</h2>
         <ul>
             <li class="active">Inicio</li>
-            <li>Datos</li>
-            <li>Análisis</li>
+            <li><a href="/analisis">Análisis</a></li>
             <li>Reportes</li>
         </ul>
     </aside>
 
-    <!-- Main -->
     <main class="main">
 
-        <!-- Navbar -->
         <header class="navbar">
             <h1 class="neon-title">
                 Análisis de Patrones de Falla en Productos Electrónicos
             </h1>
         </header>
 
-        <!-- Cards -->
+        <p class="explicacion">
+            Este proyecto analiza patrones de falla en productos electrónicos utilizando el dataset 
+            Amazon Reviews 2023 de Hugging Face, con más de 43 millones de registros.
+            Se trabajó con una muestra de {{ resumen.total_reviews }} reseñas.
+        </p>
+
         <section class="cards">
+            <div class="card">
+                <h3>Tamaño del dataset</h3>
+                <p>43,886,944</p>
+            </div>
+
             <div class="card">
                 <h3>Promedio Rating</h3>
                 <p>{{ resumen.promedio_rating }}</p>
@@ -51,20 +60,18 @@
             </div>
         </section>
 
-        <!-- Gráfico -->
+        <!-- GRÁFICA -->
         <section class="section">
-            <h3>Gráfico de análisis</h3>
+            <h3>Fallas vs No fallas</h3>
 
             <div class="panel">
-                <div class="chart-box">
-                    <p>Próximamente: gráfico de fallas vs rating</p>
-                </div>
+                <canvas id="fallasChart"></canvas>
             </div>
         </section>
 
-        <!-- Tabla organizada -->
+        <!-- TABLA -->
         <section class="section">
-            <h3>Reseñas de usuarios</h3>
+            <h3>Muestra de reseñas</h3>
 
             <div class="panel panel-scroll">
                 <table>
@@ -85,34 +92,29 @@
             </div>
         </section>
 
-        <!-- Descripción -->
-        <section class="descripcion section">
-            <p>
-                Este proyecto tiene como objetivo analizar patrones de falla en electrodomésticos 
-                utilizando datos de reseñas de Amazon mediante técnicas de minería de datos.
-            </p>
-        </section>
-
-        <!-- Referencias -->
-        <section class="referencias section">
-            <h3>Referencias</h3>
-
-            <div class="ref-card">
-                <p>
-                    Hou, Y., Li, J., He, Z., Yan, A., Chen, X., & McAuley, J. (2024).
-                    <strong>Bridging Language and Items for Retrieval and Recommendation.</strong>
-                    arXiv:2403.03952
-                </p>
-            </div>
-
-            <p class="nota">
-                Dataset: Amazon Reviews 2023
-            </p>
-        </section>
-
     </main>
 
 </div>
+
+<script>
+    const datosFallas = {{ resumen.fallas | tojson }};
+
+    const conFalla = datosFallas["true"] || 0;
+    const sinFalla = datosFallas["false"] || 0;
+
+    const ctx = document.getElementById('fallasChart');
+
+    new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: ['Con fallas', 'Sin fallas'],
+            datasets: [{
+                data: [conFalla, sinFalla],
+                backgroundColor: ['#ef4444', '#22c55e']
+            }]
+        }
+    });
+</script>
 
 </body>
 </html>
