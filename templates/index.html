@@ -3,45 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
+    
     <title>Minería de Datos</title>
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}?v=6">
+
+    <!-- Chart.js SOLO UNA VEZ -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
 
 <div class="container">
 
+    <!-- Sidebar -->
     <aside class="sidebar">
         <h2>Dashboard</h2>
         <ul>
             <li class="active">Inicio</li>
-            <li><a href="/analisis">Análisis</a></li>
+            <li>Análisis</li>
             <li>Reportes</li>
         </ul>
     </aside>
 
+    <!-- Main -->
     <main class="main">
 
+        <!-- Navbar -->
         <header class="navbar">
             <h1 class="neon-title">
                 Análisis de Patrones de Falla en Productos Electrónicos
             </h1>
         </header>
 
+        <!-- Descripción -->
         <p class="explicacion">
             Este proyecto analiza patrones de falla en productos electrónicos utilizando el dataset 
-            Amazon Reviews 2023 de Hugging Face, con más de 43 millones de registros.
-            Se trabajó con una muestra de {{ resumen.total_reviews }} reseñas.
+            Amazon Reviews 2023 disponible en Hugging Face, el cual contiene más de 43 millones de reseñas. 
+            Debido a su gran tamaño, se trabajó con una muestra procesada de {{ resumen.total_reviews }} registros, 
+            permitiendo identificar relaciones entre fallas reportadas y la satisfacción del usuario.
         </p>
 
+        <!-- Cards -->
         <section class="cards">
             <div class="card">
                 <h3>Tamaño del dataset</h3>
-                <p>43,886,944</p>
+                <p>43,886,944 registros</p>
             </div>
 
             <div class="card">
@@ -60,18 +67,28 @@
             </div>
         </section>
 
-        <!-- GRÁFICA -->
+        <!-- Gráficos -->
         <section class="section">
-            <h3>Fallas vs No fallas</h3>
+            <h3>Gráfico de análisis</h3>
 
-            <div class="panel">
+            <div class="charts-container">
+
+                <!-- Barras -->
+                <div class="chart-box">
+                <h4>Fallas vs No fallas</h4>
                 <canvas id="fallasChart"></canvas>
+                </div>
+                <!-- Pastel -->
+                <div class="chart-box">
+                    <canvas id="fallasChart"></canvas>
+                </div>
+
             </div>
         </section>
 
-        <!-- TABLA -->
+        <!-- Tabla -->
         <section class="section">
-            <h3>Muestra de reseñas</h3>
+            <h3>Reseñas de usuarios</h3>
 
             <div class="panel panel-scroll">
                 <table>
@@ -92,26 +109,85 @@
             </div>
         </section>
 
+        <!-- Referencias -->
+        <section class="referencias section">
+            <h3>Referencias</h3>
+
+            <div class="ref-card">
+                <p>
+                    Hou, Y., Li, J., He, Z., Yan, A., Chen, X., & McAuley, J. (2024).
+                    <strong>Bridging Language and Items for Retrieval and Recommendation.</strong>
+                    arXiv:2403.03952
+                </p>
+            </div>
+
+            <p class="nota">
+                Dataset: Amazon Reviews 2023
+            </p>
+        </section>
+
     </main>
 
 </div>
 
+<!-- SCRIPT -->
 <script>
-    const datosFallas = {{ resumen.fallas | tojson }};
+    const datosRatings = JSON.parse('{{ resumen.ratings | tojson | safe }}');
+    const labels = Object.keys(datosRatings);
+    const valores = Object.values(datosRatings);
 
-    const conFalla = datosFallas["true"] || 0;
-    const sinFalla = datosFallas["false"] || 0;
+    const ctx1 = document.getElementById('ratingsChart');
 
-    const ctx = document.getElementById('fallasChart');
+    new Chart(ctx1, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Distribución de ratings',
+                data: valores,
+                backgroundColor: '#38bdf8',
+                borderRadius: 8,
+                barThickness: 40
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: { color: 'white' }
+                }
+            },
+            scales: {
+                x: { ticks: { color: 'white' } },
+                y: { ticks: { color: 'white' } }
+            }
+        }
+    });
 
-    new Chart(ctx, {
+    const fallas = JSON.parse('{{ resumen.fallas | tojson | safe }}');
+
+    const ctx2 = document.getElementById('fallasChart');
+
+    new Chart(ctx2, {
         type: 'pie',
         data: {
             labels: ['Con fallas', 'Sin fallas'],
             datasets: [{
-                data: [conFalla, sinFalla],
-                backgroundColor: ['#ef4444', '#22c55e']
+                data: [fallas.true, fallas.false],
+                backgroundColor: ['#ef4444', '#22c55e'],
+                borderColor: '#1e293b',
+                borderWidth: 2
             }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: { color: 'white' }
+                }
+            }
         }
     });
 </script>
