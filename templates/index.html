@@ -1,118 +1,84 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <title>Minería de Datos</title>
-
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}?v=6">
-
-    <!-- Chart.js SOLO UNA VEZ -->
+    <title>Dashboard Electrónica</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .tag { display: inline-block; background: #38bdf8; color: #0f172a; padding: 4px 10px; border-radius: 10px; margin: 3px; font-size: 0.8em; }
+        .active-link { background: #38bdf8; color: white !important; border-radius: 5px; }
+    </style>
 </head>
-
 <body>
-
-<div class="container">
-
-    <!-- Sidebar -->
-    <aside class="sidebar">
-        <h2>Dashboard</h2>
-        <ul>
-            <li class="active">Inicio</li>
-            <li>Análisis</li>
-            <li>Reportes</li>
+<div class="container" style="display: flex;">
+    <aside class="sidebar" style="width: 200px; padding: 20px;">
+        <h2>Panel</h2>
+        <ul style="list-style: none; padding: 0;">
+            <li><a href="/" class="{{ 'active-link' if active_page == 'inicio' else '' }}">Inicio</a></li>
+            <li><a href="/analisis" class="{{ 'active-link' if active_page == 'analisis' else '' }}">Business Analytics</a></li>
+            <li><a href="/reportes" class="{{ 'active-link' if active_page == 'reportes' else '' }}">Minería de Datos</a></li>
         </ul>
     </aside>
 
-    <!-- Main -->
-    <main class="main">
-
-        <!-- Navbar -->
-        <header class="navbar">
-            <h1 class="neon-title">
-                Análisis de Patrones de Falla en Productos Electrónicos
-            </h1>
-        </header>
-
-        <!-- Descripción -->
+    <main class="main" style="flex: 1; padding: 20px;">
+        <h1 class="neon-title"> Análisis de Patrones de Falla en Productos Electrónicos </h1>
         <p class="explicacion">
-            Este proyecto analiza patrones de falla en productos electrónicos utilizando el dataset 
-            Amazon Reviews 2023 disponible en Hugging Face, el cual contiene más de 43 millones de reseñas. 
-            Debido a su gran tamaño, se trabajó con una muestra procesada de {{ resumen.total_reviews }} registros, 
-            permitiendo identificar relaciones entre fallas reportadas y la satisfacción del usuario.
+            En este Dashboard se realiza el análisis de patrones de falla en el sector electrónico a partir del dataset 
+            <em>Amazon Reviews 2023</em> de Hugging Face, una base de datos que supera las <strong>43 millones de reseñas</strong>. 
+             Debido a la escala masiva de la fuente original, se implementó un proceso de muestreo y limpieza para trabajar 
+            con un conjunto optimizado de <strong>{{ ba.kpis.total_reviews }} registros</strong>.
+            <br><br>
+            La actualización actual integra algoritmos de detección automática de defectos mediante procesamiento de texto. 
+            Esto permite vincular de forma directa las fallas técnicas reportadas con los indicadores de rendimiento del negocio, 
+            automatizando la extracción de información crítica que antes se encontraba dispersa en grandes volúmenes de texto no estructurado.
         </p>
 
-        <!-- Cards -->
-        <section class="cards">
-            <div class="card">
-                <h3>Tamaño del dataset</h3>
-                <p>43,886,944 registros</p>
-            </div>
 
-            <div class="card">
-                <h3>Promedio Rating</h3>
-                <p>{{ resumen.promedio_rating }}</p>
-            </div>
-
-            <div class="card">
-                <h3>Total Reviews</h3>
-                <p>{{ resumen.total_reviews }}</p>
-            </div>
-
-            <div class="card">
-                <h3>% Fallas</h3>
-                <p>{{ resumen.porcentaje_fallas }}%</p>
-            </div>
+        {% if active_page == 'inicio' %}
+        <section class="cards" style="display: flex; gap: 10px;">
+            <div class="card"><h3>Rating</h3><p>{{ ba.kpis.promedio_rating }} </p></div>
+            <div class="card"><h3>Muestra</h3><p>{{ ba.kpis.total_reviews }}</p></div>
+            <div class="card"><h3>Fallas</h3><p>{{ mining.porcentaje_fallas }}%</p></div>
         </section>
+        <p>Selecciona una pestaña en el sidebar para ver el análisis detallado por materia.</p>
+        {% endif %}
 
-        <!-- Gráficos -->
+        {% if active_page == 'analisis' %}
         <section class="section">
-            <h3>Gráfico de análisis</h3>
-
-            <div class="charts-container">
-
-                <!-- Barras -->
-                <div class="chart-box">
-                <h4>Fallas vs No fallas</h4>
-                <canvas id="fallasChart"></canvas>
-                </div>
-                <!-- Pastel -->
-                <div class="chart-box">
-                    <canvas id="fallasChart"></canvas>
-                </div>
-
-            </div>
+            <h3>Análisis de Negocio (KPIs)</h3>
+            <p>Confianza del Consumidor (Verificados): {{ ba.kpis.porcentaje_verificados }}%</p>
+            <div style="height: 300px;"><canvas id="ratingsChart"></canvas></div>
         </section>
+        {% endif %}
 
-        <!-- Tabla -->
+        {% if active_page == 'reportes' %}
         <section class="section">
-            <h3>Reseñas de usuarios</h3>
-
-            <div class="panel panel-scroll">
-                <table>
-                    <tr>
-                        <th>Rating</th>
-                        <th>Título</th>
-                        <th>Texto</th>
-                    </tr>
-
-                    {% for d in muestra %}
-                    <tr>
-                        <td>{{ d.rating }}</td>
-                        <td>{{ d.title }}</td>
-                        <td>{{ d.text[:80] }}...</td>
-                    </tr>
-                    {% endfor %}
-                </table>
+            <h3>Minería de Texto: Patrones Detectados</h3>
+            <div class="tags">
+                {% for palabra, conteo in mining.palabras_clave.items() %}
+                    <span class="tag">{{ palabra }}</span>
+                {% endfor %}
             </div>
+            <h4>Casos Críticos Identificados</h4>
+            <table>
+                {% for item in mining.ejemplos_criticos %}
+                <tr>
+                    <td><strong>{{ item.rating }}</strong></td>
+                    <td>{{ item.title }}</td>
+                    <td>{{ item.text[:100] }}...</td>
+                </tr>
+                {% endfor %}
+            </table>
         </section>
-
-        <!-- Referencias -->
+        {% endif %}
+    </main>
+</div>
+<div id="data-ba" data-json='{{ ba.graficos.ratings | tojson | safe }}' style="display:none;"></div>
+ <!-- Referencias -->
         <section class="referencias section">
-            <h3>Referencias</h3>
 
+            <h3>Referencias</h3>
             <div class="ref-card">
                 <p>
                     Hou, Y., Li, J., He, Z., Yan, A., Chen, X., & McAuley, J. (2024).
@@ -120,77 +86,44 @@
                     arXiv:2403.03952
                 </p>
             </div>
-
             <p class="nota">
                 Dataset: Amazon Reviews 2023
             </p>
         </section>
-
-    </main>
-
-</div>
-
-<!-- SCRIPT -->
 <script>
-    const datosRatings = JSON.parse('{{ resumen.ratings | tojson | safe }}');
-    const labels = Object.keys(datosRatings);
-    const valores = Object.values(datosRatings);
+    const dataContainer = document.getElementById('data-ba');
+    if (dataContainer) {
+        try {
+            // Leemos el JSON que inyectamos en el atributo 'data-json'
+            const ratingsData = JSON.parse(dataContainer.getAttribute('data-json'));
+            
+            const labels = Object.keys(ratingsData);
+            const valores = Object.values(ratingsData);
 
-    const ctx1 = document.getElementById('ratingsChart');
-
-    new Chart(ctx1, {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Distribución de ratings',
-                data: valores,
-                backgroundColor: '#38bdf8',
-                borderRadius: 8,
-                barThickness: 40
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    labels: { color: 'white' }
+            const ctx = document.getElementById('ratingsChart').getContext('2d');
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Distribución de Calificaciones',
+                        data: valores,
+                        backgroundColor: '#38bdf8'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
                 }
-            },
-            scales: {
-                x: { ticks: { color: 'white' } },
-                y: { ticks: { color: 'white' } }
-            }
+            });
+        } catch (e) {
+            console.error("Error cargando los datos del gráfico:", e);
         }
-    });
-
-    const fallas = JSON.parse('{{ resumen.fallas | tojson | safe }}');
-
-    const ctx2 = document.getElementById('fallasChart');
-
-    new Chart(ctx2, {
-        type: 'pie',
-        data: {
-            labels: ['Con fallas', 'Sin fallas'],
-            datasets: [{
-                data: [fallas.true, fallas.false],
-                backgroundColor: ['#ef4444', '#22c55e'],
-                borderColor: '#1e293b',
-                borderWidth: 2
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    labels: { color: 'white' }
-                }
-            }
-        }
-    });
+    }
 </script>
-
 </body>
 </html>
