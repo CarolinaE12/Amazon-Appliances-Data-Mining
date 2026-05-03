@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Minería de Datos — Dashboard Electrónica</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<div class="contenedor">
+
+    <!-- ===================== BARRA LATERAL ===================== -->
+    <aside class="sidebar">
+        <h2>Navegación</h2>
+        <ul>
+            <li><a href="/"                       >Inicio</a></li>
+            <li><a href="/analisis"               >Business Analytics</a></li>
+            <li><a href="/reportes" class="activo">Minería de Datos</a></li>
+        </ul>
+    </aside>
+
+    <!-- ===================== CONTENIDO PRINCIPAL ===================== -->
+    <main class="contenido">
+
+        <h1>Minería de Datos</h1>
+        <p>
+            Detección automática de patrones de falla mediante procesamiento de texto.
+            Se identificaron <strong>{{ mining.conteo_fallas }}</strong> reseñas que contienen
+            términos asociados a defectos, lo que representa el
+            <strong>{{ mining.porcentaje_fallas }}%</strong> de la muestra.
+        </p>
+
+        <!-- KPIs de minería -->
+        <div class="kpi-fila">
+            <div class="kpi">
+                <div class="numero">{{ mining.conteo_fallas }}</div>
+                <div class="etiqueta">Fallas detectadas</div>
+            </div>
+            <div class="kpi">
+                <div class="numero">{{ mining.porcentaje_fallas }}%</div>
+                <div class="etiqueta">Tasa de falla</div>
+            </div>
+            <div class="kpi">
+                <div class="numero">10</div>
+                <div class="etiqueta">Keywords del modelo</div>
+            </div>
+        </div>
+
+        <!-- KEYWORDS DEL MODELO -->
+        <div class="tarjeta">
+            <h3>Términos usados para detectar fallas</h3>
+            <p style="margin-bottom: 14px;">
+                El algoritmo busca estas palabras en el texto de cada reseña.
+                Si encuentra alguna, la marca como una posible falla:
+            </p>
+            <div class="nube">
+                <!-- Estas son las keywords reales del procesar_datos.py -->
+                <span class="etiqueta-kw">broken</span>
+                <span class="etiqueta-kw">defective</span>
+                <span class="etiqueta-kw">not working</span>
+                <span class="etiqueta-kw">damaged</span>
+                <span class="etiqueta-kw">return</span>
+                <span class="etiqueta-kw">gasoline</span>
+                <span class="etiqueta-kw">smell</span>
+                <span class="etiqueta-kw">roto</span>
+                <span class="etiqueta-kw">malo</span>
+                <span class="etiqueta-kw">error</span>
+            </div>
+        </div>
+
+        <!-- GRÁFICA: fallas vs normales -->
+        <div class="tarjeta">
+            <h3>Reseñas con falla vs sin falla</h3>
+            <p style="margin-bottom: 18px;">
+                Aunque el porcentaje es bajo ({{ mining.porcentaje_fallas }}%),
+                las reseñas con falla concentran los votos de utilidad más altos de la comunidad,
+                lo que indica que son las más leídas e influyentes.
+            </p>
+            <div class="grafica-pequena">
+                <canvas id="graficaFallas"></canvas>
+            </div>
+        </div>
+
+        <!-- TABLA DE CASOS CRÍTICOS -->
+        <div class="tarjeta">
+            <h3>Casos críticos detectados</h3>
+            <p style="margin-bottom: 16px;">
+                Top reseñas con falla ordenadas por votos de utilidad en la comunidad:
+            </p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Rating</th>
+                        <th>Título</th>
+                        <th>Fragmento del texto</th>
+                        <th>Votos útiles</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- En Jinja2, el for recorre la lista de Python -->
+                    {% for caso in mining.ejemplos_criticos %}
+                    <tr>
+                        <!-- caso.rating, caso.title, etc. son las claves del JSON -->
+                        <td>{{ caso.rating }} ★</td>
+                        <td>{{ caso.title }}</td>
+                        <!-- [:80] toma los primeros 80 caracteres del texto -->
+                        <td>{{ caso.text[:80] }}...</td>
+                        <td>{{ caso.helpful_vote }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- INTERPRETACIÓN -->
+        <div class="insight">
+            <strong>Interpretación:</strong>
+            Las reseñas de 1–2★ con keywords de falla tienen alta confiabilidad.
+            El modelo puede generar falsos positivos en reseñas de 4–5★ donde la palabra
+            "return" se usa en contexto positivo ("I returned and got a better model").
+            Para mejorar la precisión se podría combinar el análisis de texto con el rating.
+        </div>
+
+        <div class="referencia">
+            Hou, Y., Li, J., He, Z., Yan, A., Chen, X., &amp; McAuley, J. (2024).
+            <em>Bridging Language and Items for Retrieval and Recommendation.</em>
+            arXiv:2403.03952
+        </div>
+
+    </main>
+</div>
+
+<!-- ===================== JAVASCRIPT ===================== -->
+<script>
+    // Gráfica de dona: fallas vs sin falla
+    // Calculamos sin falla = 100 - porcentaje_fallas
+    var porcentajeFalla   = {{ mining.porcentaje_fallas }};
+    var porcentajeNormal  = Math.round((100 - porcentajeFalla) * 100) / 100;
+
+    new Chart(document.getElementById('graficaFallas').getContext('2d'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Sin falla (' + porcentajeNormal + '%)', 'Con falla (' + porcentajeFalla + '%)'],
+            datasets: [{
+                data: [porcentajeNormal, porcentajeFalla],
+                backgroundColor: ['#38bdf8', '#ef4444'],
+                borderWidth: 0,
+                hoverOffset: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { color: '#94a3b8', font: { size: 13 } }
+                }
+            }
+        }
+    });
+</script>
+
+</body>
+</html>

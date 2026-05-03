@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Business Analytics — Dashboard Electrónica</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<div class="contenedor">
+
+    <!-- ===================== BARRA LATERAL ===================== -->
+    <aside class="sidebar">
+        <h2>Navegación</h2>
+        <ul>
+            <li><a href="/"                       >Inicio</a></li>
+            <li><a href="/analisis" class="activo">Business Analytics</a></li>
+            <li><a href="/reportes"               >Minería de Datos</a></li>
+        </ul>
+    </aside>
+
+    <!-- ===================== CONTENIDO PRINCIPAL ===================== -->
+    <main class="contenido">
+
+        <h1>Business Analytics</h1>
+        <p>
+            Indicadores clave de negocio extraídos de las
+            <strong>{{ ba.kpis.total_reviews }}</strong> reseñas analizadas.
+            Permiten entender la satisfacción del consumidor y los volúmenes
+            de actividad a lo largo del tiempo.
+        </p>
+
+        <!-- KPIs -->
+        <div class="kpi-fila">
+            <div class="kpi">
+                <div class="numero">{{ ba.kpis.promedio_rating }}</div>
+                <div class="etiqueta">Rating promedio</div>
+            </div>
+            <div class="kpi">
+                <div class="numero">{{ ba.kpis.total_reviews }}</div>
+                <div class="etiqueta">Total reseñas</div>
+            </div>
+            <div class="kpi">
+                <div class="numero">{{ ba.kpis.porcentaje_verificados }}%</div>
+                <div class="etiqueta">Compras verificadas</div>
+            </div>
+        </div>
+
+        <!-- GRÁFICA 1: distribución de ratings -->
+        <div class="fila-graficas">
+
+    <!-- GRÁFICA 1 -->
+    <div class="tarjeta grafica-card">
+
+        <h3>Distribución de calificaciones (1 a 5 estrellas)</h3>
+
+        <p style="margin-bottom: 18px;">
+            La mayoría de las reseñas son de 5 estrellas (65.9%), lo que indica alta satisfacción general.
+            El 12.5% son negativas (1–2★), que es donde se concentran las fallas reportadas.
+        </p>
+
+        <div class="grafica-mediana">
+            <canvas id="graficaBarras"></canvas>
+        </div>
+
+    </div>
+
+
+    <!-- GRÁFICA 2 -->
+    <div class="tarjeta grafica-card">
+
+        <h3>Volumen de reseñas por mes (Abr 2022 – Mar 2023)</h3>
+
+        <p style="margin-bottom: 18px;">
+            Se observa un pico en julio 2022 (631 reseñas) y una caída en feb–mar 2023,
+            posiblemente por el fin de la temporada navideña.
+        </p>
+
+        <div class="grafica-mediana">
+            <canvas id="graficaTiempo"></canvas>
+        </div>
+
+    </div>
+
+</div>
+        <!-- INTERPRETACIÓN -->
+        <div class="insight">
+            <strong>Interpretación:</strong>
+            El índice de satisfacción de {{ ba.kpis.promedio_rating }}/5 está impulsado por la alta concentración
+            de reseñas de 5★. El {{ ba.kpis.porcentaje_verificados }}% de compras verificadas fortalece
+            la validez estadística de estos KPIs, ya que provienen de compradores reales confirmados por Amazon.
+        </div>
+
+        <div class="referencia">
+            Hou, Y., Li, J., He, Z., Yan, A., Chen, X., &amp; McAuley, J. (2024).
+            <em>Bridging Language and Items for Retrieval and Recommendation.</em>
+            arXiv:2403.03952
+        </div>
+
+    </main>
+</div>
+
+<!-- ===================== JAVASCRIPT ===================== -->
+<script>
+    // --- Gráfica 1: Barras ---
+    // | tojson convierte el dict de Python a objeto JavaScript
+    var datosRatings = {{ ba.graficos.ratings | tojson }};
+
+    var etiquetas = Object.keys(datosRatings).map(function(k) { return k + ' ★'; });
+    var valores   = Object.values(datosRatings);
+    var colores   = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#38bdf8'];
+
+    new Chart(document.getElementById('graficaBarras').getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: etiquetas,
+            datasets: [{
+                label: 'Cantidad de reseñas',
+                data: valores,
+                backgroundColor: colores,
+                borderRadius: 6,
+                borderSkipped: false
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { ticks: { color: '#94a3b8' }, grid: { display: false } },
+                y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+            }
+        }
+    });
+
+    // --- Gráfica 2: Línea de tiempo ---
+    var datosTiempo = {{ ba.graficos.tiempo | tojson }};
+
+    var meses  = Object.keys(datosTiempo);
+    var counts = Object.values(datosTiempo);
+
+    new Chart(document.getElementById('graficaTiempo').getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: meses,
+            datasets: [{
+                label: 'Reseñas por mes',
+                data: counts,
+                borderColor: '#38bdf8',
+                backgroundColor: 'rgba(56, 189, 248, 0.1)',
+                fill: true,
+                tension: 0.3,
+                pointRadius: 4,
+                pointBackgroundColor: '#38bdf8'
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { ticks: { color: '#94a3b8' }, grid: { display: false } },
+                y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' }, min: 0 }
+            }
+        }
+    });
+</script>
+
+</body>
+</html>

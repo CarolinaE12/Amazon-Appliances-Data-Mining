@@ -2,127 +2,158 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Dashboard Electrónica</title>
+    <title>Inicio — Dashboard Electrónica</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        .tag { display: inline-block; background: #38bdf8; color: #0f172a; padding: 4px 10px; border-radius: 10px; margin: 3px; font-size: 0.8em; }
-    </style>
 </head>
 <body>
-<div class="container" style="display: flex;">
-    <aside class="sidebar" style="width: 200px; padding: 20px;">
-        <h2>Panel</h2>
-        <ul style="list-style: none; padding: 0;">
-            <li><a href="/" class="{{ 'active-link' if active_page == 'inicio' else '' }}">Inicio</a></li>
-            <li><a href="/analisis" class="{{ 'active-link' if active_page == 'analisis' else '' }}">Análisis</a></li>
-            <li><a href="/reportes" class="{{ 'active-link' if active_page == 'reportes' else '' }}">Minería de Datos</a></li>
+
+<div class="contenedor">
+
+    <!-- ===================== BARRA LATERAL ===================== -->
+    <aside class="sidebar">
+        <h2>Navegación</h2>
+        <ul>
+            <li><a href="/"         class="activo">Inicio</a></li>
+            <li><a href="/analisis"              >Business Analytics</a></li>
+            <li><a href="/reportes"              >Minería de Datos</a></li>
         </ul>
     </aside>
 
-    <main class="main" style="flex: 1; padding: 20px;">
-        <h1 class="neon-title"> Análisis de Patrones de Falla en Productos Electrónicos </h1>
-        <p class="explicacion">
-            En este Dashboard se realiza el análisis de patrones de falla en el sector electrónico a partir del dataset 
-            <em>Amazon Reviews 2023</em> de Hugging Face, una base de datos que supera las <strong>43 millones de reseñas</strong>. 
-             Debido a la escala masiva de la fuente original, se implementó un proceso de muestreo y limpieza para trabajar 
-            con un conjunto optimizado de <strong>{{ ba.kpis.total_reviews }} registros</strong>.
-            <br><br>
-            La actualización actual integra algoritmos de detección automática de defectos mediante procesamiento de texto. 
-            Esto permite vincular de forma directa las fallas técnicas reportadas con los indicadores de rendimiento del negocio, 
-            automatizando la extracción de información crítica que antes se encontraba dispersa en grandes volúmenes de texto no estructurado.
+    <!-- ===================== CONTENIDO PRINCIPAL ===================== -->
+    <main class="contenido">
+
+        <h1>Análisis de Fallas en Electrónica Amazon</h1>
+        <p>
+            Este dashboard analiza <strong>{{ ba.kpis.total_reviews }}</strong> reseñas del dataset
+            <em>Amazon Reviews 2023</em> (43 millones de registros, 6 GB).
+            Se detectaron automáticamente patrones de falla mediante minería de texto
+            y se extrajeron KPIs de negocio para dos materias:
+            <strong>Business Analytics</strong> y <strong>Minería de Datos</strong>.
         </p>
 
-
-        {% if active_page == 'inicio' %}
-        <section class="cards" style="display: flex; gap: 10px;">
-            <div class="card"><h3>Rating</h3><p>{{ ba.kpis.promedio_rating }} </p></div>
-            <div class="card"><h3>Muestra</h3><p>{{ ba.kpis.total_reviews }}</p></div>
-            <div class="card"><h3>Fallas</h3><p>{{ mining.porcentaje_fallas }}%</p></div>
-        </section>
-        <p>Selecciona una pestaña en el sidebar para ver el análisis detallado por materia.</p>
-        {% endif %}
-
-        {% if active_page == 'analisis' %}
-        <section class="section">
-            <h3>Análisis de Negocio (KPIs)</h3>
-            <p>Confianza del Consumidor (Verificados): {{ ba.kpis.porcentaje_verificados }}%</p>
-            <div style="height: 300px;"><canvas id="ratingsChart"></canvas></div>
-        </section>
-        {% endif %}
-
-        {% if active_page == 'reportes' %}
-        <section class="section">
-            <h3>Minería de Texto: Patrones Detectados</h3>
-            <div class="tags">
-                {% for palabra, conteo in mining.palabras_clave.items() %}
-                    <span class="tag">{{ palabra }}</span>
-                {% endfor %}
+        <!-- KPIs PRINCIPALES -->
+        <div class="kpi-fila">
+            <div class="kpi">
+                <div class="numero">{{ ba.kpis.total_reviews }}</div>
+                <div class="etiqueta">Reseñas analizadas</div>
             </div>
-            <h4>Casos Críticos Identificados</h4>
-            <table>
-                {% for item in mining.ejemplos_criticos %}
-                <tr>
-                    <td><strong>{{ item.rating }}</strong></td>
-                    <td>{{ item.title }}</td>
-                    <td>{{ item.text[:100] }}...</td>
-                </tr>
-                {% endfor %}
-            </table>
-        </section>
-        {% endif %}
+            <div class="kpi">
+                <div class="numero">{{ ba.kpis.promedio_rating }}</div>
+                <div class="etiqueta">Rating promedio / 5</div>
+            </div>
+            <div class="kpi">
+                <div class="numero">{{ ba.kpis.porcentaje_verificados }}%</div>
+                <div class="etiqueta">Compras verificadas</div>
+            </div>
+            <div class="kpi">
+                <div class="numero">{{ mining.porcentaje_fallas }}%</div>
+                <div class="etiqueta">Reseñas con falla</div>
+            </div>
+        </div>
+
+        <div class="fila-graficas">
+            <!-- GRÁFICA DONA -->
+              <div class="grafica-card">
+                 <h3>¿Cómo califican los compradores?</h3>
+                  <p style="margin-bottom: 20px;"> La mayoría de reseñas son positivas, pero el {{ mining.porcentaje_fallas }}% reporta algún tipo de defecto. </p>
+                   <div class="contenedor-grafica-pastel"> <canvas id="graficaInicio"></canvas>
+                 </div> </div>
+                  <!-- GRÁFICA BARRAS -->
+                    <div class="grafica-card">
+                         <h3>Distribución de calificaciones</h3>
+                          <p style="margin-bottom: 20px;"> El 65.9% de las reseñas corresponden a productos con 5 estrellas. </p>
+                           <div class="contenedor-grafica">
+                             <canvas id="graficaBarras"></canvas>
+                            </div>
+                    </div>
+                 </div>
+        <!-- PIPELINE DEL PROYECTO -->
+        <div class="tarjeta" style="padding: 34px 24px 24px 24px;">
+            <h3 style="margin-bottom: 18px;">Pipeline del proyecto</h3>
+            <p>Del archivo comprimido de 6 GB hasta los datos que alimentan este dashboard:</p>
+            <div style="display:flex; gap: 16px; margin-top:28px; flex-wrap:wrap; align-items:center;">
+                <div style="background:#164e63;color:#7dd3fc;padding:10px 16px;border-radius:10px;font-size:13px;text-align:center;">
+                    📦 Electronics.jsonl.gz<br><small style="color:#94a3b8;">6 GB · 43M filas</small>
+                </div>
+                <span style="color:#475569;font-size:20px;">→</span>
+                <div style="background:#1e293b;color:#e2e8f0;padding:10px 16px;border-radius:10px;font-size:13px;text-align:center;">
+                    🧹 Limpieza<br><small style="color:#94a3b8;">50,000 filas</small>
+                </div>
+                <span style="color:#475569;font-size:20px;">→</span>
+                <div style="background:#1e293b;color:#e2e8f0;padding:10px 16px;border-radius:10px;font-size:13px;text-align:center;">
+                    🔍 Detección de fallas<br><small style="color:#94a3b8;">pattern matching</small>
+                </div>
+                <span style="color:#475569;font-size:20px;">→</span>
+                <div style="background:#14532d;color:#86efac;padding:10px 16px;border-radius:10px;font-size:13px;text-align:center;">
+                    📊 Dashboard<br><small style="color:#94a3b8;">BA + Minería</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="referencia">
+            Hou, Y., Li, J., He, Z., Yan, A., Chen, X., &amp; McAuley, J. (2024).
+            <em>Bridging Language and Items for Retrieval and Recommendation.</em>
+            arXiv:2403.03952 · Dataset: Amazon Reviews 2023
+        </div>
+
     </main>
 </div>
-<div id="data-ba" data-json='{{ ba.graficos.ratings | tojson | safe }}' style="display:none;"></div>
- <!-- Referencias -->
-        <section class="referencias section">
 
-            <h3>Referencias</h3>
-            <div class="ref-card">
-                <p>
-                    Hou, Y., Li, J., He, Z., Yan, A., Chen, X., & McAuley, J. (2024).
-                    <strong>Bridging Language and Items for Retrieval and Recommendation.</strong>
-                    arXiv:2403.03952
-                </p>
-            </div>
-            <p class="nota">
-                Dataset: Amazon Reviews 2023
-            </p>
-        </section>
+<!-- ===================== JAVASCRIPT PARA LA GRÁFICA ===================== -->
 <script>
-    const dataContainer = document.getElementById('data-ba');
-    if (dataContainer) {
-        try {
-            // Leemos el JSON que inyectamos en el atributo 'data-json'
-            const ratingsData = JSON.parse(dataContainer.getAttribute('data-json'));
-            
-            const labels = Object.keys(ratingsData);
-            const valores = Object.values(ratingsData);
-
-            const ctx = document.getElementById('ratingsChart').getContext('2d');
-            
-            new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Distribución de Calificaciones',
-                        data: valores,
-                        backgroundColor: '#38bdf8'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: { beginAtZero: true }
-                    }
+ var datosRatings = {{ ba.graficos.ratings | tojson }};
+  var etiquetas = Object.keys(datosRatings).map(function(k)
+   { return k + ' ★'; });
+    var valores = Object.values(datosRatings);
+     /* ========================= 
+     GRÁFICA DONA
+      ========================= */
+       new Chart(document.getElementById('graficaInicio').getContext('2d'),
+        { type: 'doughnut',
+         data: { labels: etiquetas,
+          datasets: [{ data: valores,
+           backgroundColor: [ '#ef4444', '#f97316', '#eab308', '#22c55e', '#38bdf8' ],
+            borderWidth: 0, hoverOffset: 8 }]
+             }, options: { responsive: true,
+              maintainAspectRatio: false,
+               plugins: { legend: { position:
+                'bottom', labels: { color:
+                 '#94a3b8', font:
+                  { size: 13
                 }
-            });
-        } catch (e) {
-            console.error("Error cargando los datos del gráfico:", e);
-        }
+             }
+        } 
+    } 
     }
-</script>
-</body>
-</html>
+});
+ /* =========================
+  GRÁFICA BARRAS
+   ========================= */
+    new Chart(document.getElementById('graficaBarras').getContext('2d'),
+     { type: 'bar', data: { labels: etiquetas, datasets:
+      [{ label: 'Cantidad de reseñas', data:
+       valores, backgroundColor:
+        [ '#ef4444', '#f97316', '#eab308', '#22c55e', '#38bdf8' ],
+         borderRadius: 8 }] }, options:
+          { responsive: true, maintainAspectRatio: false,
+           plugins: { legend: { labels:
+            { color: '#94a3b8' }
+             }
+              },
+               scales:
+                { x: { ticks:
+                 { color: '#94a3b8' },
+                  grid:
+                   { color: 'rgba(255,255,255,0.04)' }
+                    }, y: { ticks: { color: '#94a3b8' },
+                     grid:
+                      {
+                         color:
+                          'rgba(255,255,255,0.04)'
+                           } 
+                    } 
+                } 
+                 }
+            }); 
+ </script>
