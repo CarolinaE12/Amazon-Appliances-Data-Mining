@@ -5,33 +5,70 @@
     <title>Minería de Datos — Dashboard Electrónica</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        /* =============================================
+           Todas las gráficas usan este contenedor.
+           position:relative + height fija es lo que
+           le dice a Chart.js cuánto espacio tiene.
+           ============================================= */
+        .grafica-wrap {
+            position: relative;
+            height: 280px;
+            width: 100%;
+        }
+
+        /* Dos columnas para secciones lado a lado */
+        .fila-graficas {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 900px) {
+            .fila-graficas { grid-template-columns: 1fr; }
+        }
+
+        /* Nota metodológica en amarillo */
+        .nota-metodologica {
+            background: rgba(234, 179, 8, 0.08);
+            border-left: 3px solid #eab308;
+            border-radius: 10px;
+            padding: 14px 18px;
+            margin: 16px 0;
+            font-size: 13px;
+            color: #cbd5e1;
+            line-height: 1.7;
+        }
+    </style>
 </head>
 <body>
 
 <div class="contenedor">
 
-    <!-- ===================== BARRA LATERAL ===================== -->
+    <!-- BARRA LATERAL -->
     <aside class="sidebar">
         <h2>Navegación</h2>
         <ul>
-            <li><a href="/"                       >Inicio</a></li>
-            <li><a href="/analisis"               >Business Analytics</a></li>
+            <li><a href="/">Inicio</a></li>
+            <li><a href="/analisis">Business Analytics</a></li>
             <li><a href="/reportes" class="activo">Minería de Datos</a></li>
         </ul>
     </aside>
 
-    <!-- ===================== CONTENIDO PRINCIPAL ===================== -->
+    <!-- CONTENIDO -->
     <main class="contenido">
 
         <h1>Minería de Datos</h1>
         <p>
             Detección automática de patrones de falla mediante procesamiento de texto.
-            Se identificaron <strong>{{ mining.conteo_fallas }}</strong> reseñas que contienen
-            términos asociados a defectos, lo que representa el
+            Se identificaron <strong>{{ mining.conteo_fallas }}</strong> reseñas con
+            términos asociados a defectos, representando el
             <strong>{{ mining.porcentaje_fallas }}%</strong> de la muestra.
         </p>
 
-        <!-- KPIs de minería -->
+        <!-- KPIs -->
         <div class="kpi-fila">
             <div class="kpi">
                 <div class="numero">{{ mining.conteo_fallas }}</div>
@@ -42,69 +79,147 @@
                 <div class="etiqueta">Tasa de falla</div>
             </div>
             <div class="kpi">
-                <div class="numero">10</div>
-                <div class="etiqueta">Keywords del modelo</div>
+                <div class="numero">{{ mining.impacto.alto_impacto }}</div>
+                <div class="etiqueta">Casos alto impacto (≥100 votos)</div>
+            </div>
+        </div>
+
+        <!-- CAUSAS PRINCIPALES -->
+        <div class="tarjeta">
+            <h3>¿Cuál es la causa principal de falla o devolución?</h3>
+            <p style="margin-bottom: 16px;">
+                Cada reseña con falla fue clasificada automáticamente según los términos
+                encontrados en su texto.
+            </p>
+            <div class="grafica-wrap">
+                <canvas id="graficaCausas"></canvas>
+            </div>
+        </div>
+
+        <!-- DONA + TIPO DE PRODUCTO -->
+        <div class="fila-graficas">
+            <div class="tarjeta">
+                <h3>Proporción de reseñas con falla</h3>
+                <p style="margin-bottom: 12px; font-size: 13px;">
+                    El {{ mining.porcentaje_fallas }}% reporta algún defecto.
+                    Aunque es minoría, concentra los votos de utilidad más altos.
+                </p>
+                <div class="grafica-wrap">
+                    <canvas id="graficaFallas"></canvas>
+                </div>
+            </div>
+            <div class="tarjeta">
+                <h3>Fallas por tipo de producto</h3>
+                <p style="margin-bottom: 12px; font-size: 13px;">
+                    Clasificación basada en palabras clave del título.
+                    "Título genérico" agrupa reseñas sin nombre de producto específico.
+                </p>
+                <div class="grafica-wrap">
+                    <canvas id="graficaTipos"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- NOTA METODOLÓGICA -->
+        <div class="nota-metodologica">
+            <strong>⚠ Nota metodológica:</strong>
+            El grupo "Título genérico" representa reseñas donde el usuario escribió
+            una opinión como título ("Five Stars", "Returned", "Poor quality") en lugar
+            del nombre del producto. Esto es una limitación del dataset de Amazon, no del
+            modelo de análisis. Para clasificar correctamente estos casos se requeriría
+            cruzar con la metadata de productos por código ASIN.
+        </div>
+
+        <!-- FALLAS POR RATING -->
+        <div class="tarjeta">
+            <h3>¿La devolución depende de la calificación del producto?</h3>
+            <p style="margin-bottom: 16px;">
+                Distribución de fallas detectadas dentro de cada nivel de rating.
+                Confirma que los productos con 1–2★ concentran la mayoría de reportes de defecto.
+            </p>
+            <div class="grafica-wrap">
+                <canvas id="graficaRatingFalla"></canvas>
             </div>
         </div>
 
         <!-- KEYWORDS DEL MODELO -->
         <div class="tarjeta">
-            <h3>Términos usados para detectar fallas</h3>
+            <h3>Palabras clave del modelo de detección</h3>
             <p style="margin-bottom: 14px;">
-                El algoritmo busca estas palabras en el texto de cada reseña.
-                Si encuentra alguna, la marca como una posible falla:
+                El algoritmo clasifica cada reseña buscando estos términos por categoría:
             </p>
+
+            <h3 style="margin-top: 10px;">Calidad del producto</h3>
             <div class="nube">
-                <!-- Estas son las keywords reales del procesar_datos.py -->
                 <span class="etiqueta-kw">broken</span>
                 <span class="etiqueta-kw">defective</span>
                 <span class="etiqueta-kw">not working</span>
+                <span class="etiqueta-kw">poor quality</span>
+                <span class="etiqueta-kw">fell apart</span>
+                <span class="etiqueta-kw">cheaply made</span>
+                <span class="etiqueta-kw">flimsy</span>
+            </div>
+
+            <h3 style="margin-top: 16px;">Estado al ser entregado</h3>
+            <div class="nube">
                 <span class="etiqueta-kw">damaged</span>
-                <span class="etiqueta-kw">return</span>
-                <span class="etiqueta-kw">gasoline</span>
-                <span class="etiqueta-kw">smell</span>
-                <span class="etiqueta-kw">roto</span>
-                <span class="etiqueta-kw">malo</span>
+                <span class="etiqueta-kw">arrived broken</span>
+                <span class="etiqueta-kw">scratched</span>
+                <span class="etiqueta-kw">cracked</span>
+                <span class="etiqueta-kw">dented</span>
+                <span class="etiqueta-kw">smashed</span>
+            </div>
+
+            <h3 style="margin-top: 16px;">Problemas de software / conectividad</h3>
+            <div class="nube">
                 <span class="etiqueta-kw">error</span>
+                <span class="etiqueta-kw">crash</span>
+                <span class="etiqueta-kw">freezes</span>
+                <span class="etiqueta-kw">not compatible</span>
+                <span class="etiqueta-kw">connection issues</span>
+                <span class="etiqueta-kw">bluetooth</span>
+                <span class="etiqueta-kw">firmware</span>
+            </div>
+
+            <h3 style="margin-top: 16px;">Devolución explícita</h3>
+            <div class="nube">
+                <span class="etiqueta-kw">return</span>
+                <span class="etiqueta-kw">refund</span>
+                <span class="etiqueta-kw">exchange</span>
+                <span class="etiqueta-kw">replacement</span>
+                <span class="etiqueta-kw">sent back</span>
+            </div>
+
+            <h3 style="margin-top: 16px;">Olor / sustancias</h3>
+            <div class="nube">
+                <span class="etiqueta-kw">smell</span>
+                <span class="etiqueta-kw">odor</span>
+                <span class="etiqueta-kw">gasoline</span>
+                <span class="etiqueta-kw">burning smell</span>
+                <span class="etiqueta-kw">smoke</span>
             </div>
         </div>
 
-        <!-- GRÁFICA: fallas vs normales -->
+        <!-- CASOS CRÍTICOS -->
         <div class="tarjeta">
-            <h3>Reseñas con falla vs sin falla</h3>
-            <p style="margin-bottom: 18px;">
-                Aunque el porcentaje es bajo ({{ mining.porcentaje_fallas }}%),
-                las reseñas con falla concentran los votos de utilidad más altos de la comunidad,
-                lo que indica que son las más leídas e influyentes.
-            </p>
-            <div class="grafica-pequena">
-                <canvas id="graficaFallas"></canvas>
-            </div>
-        </div>
-
-        <!-- TABLA DE CASOS CRÍTICOS -->
-        <div class="tarjeta">
-            <h3>Casos críticos detectados</h3>
+            <h3>Casos críticos — mayor impacto en la comunidad</h3>
             <p style="margin-bottom: 16px;">
-                Top reseñas con falla ordenadas por votos de utilidad en la comunidad:
+                Reseñas con falla detectada ordenadas por votos de utilidad:
             </p>
             <table>
                 <thead>
                     <tr>
                         <th>Rating</th>
                         <th>Título</th>
-                        <th>Fragmento del texto</th>
-                        <th>Votos útiles</th>
+                        <th>Fragmento</th>
+                        <th>Votos</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <!-- En Jinja2, el for recorre la lista de Python -->
                     {% for caso in mining.ejemplos_criticos %}
                     <tr>
-                        <!-- caso.rating, caso.title, etc. son las claves del JSON -->
                         <td>{{ caso.rating }} ★</td>
                         <td>{{ caso.title }}</td>
-                        <!-- [:80] toma los primeros 80 caracteres del texto -->
                         <td>{{ caso.text[:80] }}...</td>
                         <td>{{ caso.helpful_vote }}</td>
                     </tr>
@@ -113,13 +228,16 @@
             </table>
         </div>
 
-        <!-- INTERPRETACIÓN -->
+        <!-- INTERPRETACIÓN FINAL -->
         <div class="insight">
-            <strong>Interpretación:</strong>
-            Las reseñas de 1–2★ con keywords de falla tienen alta confiabilidad.
-            El modelo puede generar falsos positivos en reseñas de 4–5★ donde la palabra
-            "return" se usa en contexto positivo ("I returned and got a better model").
-            Para mejorar la precisión se podría combinar el análisis de texto con el rating.
+            <strong>Conclusiones:</strong>
+            La causa más frecuente de falla es la <strong>calidad del producto</strong>,
+            seguida por problemas de <strong>devolución explícita</strong> y
+            <strong>estado al momento de entrega</strong>. La tasa de falla en reseñas
+            de 1–2★ es significativamente mayor que en 4–5★, confirmando la correlación
+            entre calificación baja y reporte de defecto. Las reseñas con falla concentran
+            los votos de utilidad más altos, indicando que son las más influyentes
+            para otros compradores.
         </div>
 
         <div class="referencia">
@@ -131,34 +249,94 @@
     </main>
 </div>
 
-<!-- ===================== JAVASCRIPT ===================== -->
+<!-- JAVASCRIPT -->
 <script>
-    // Gráfica de dona: fallas vs sin falla
-    // Calculamos sin falla = 100 - porcentaje_fallas
-    var porcentajeFalla   = {{ mining.porcentaje_fallas }};
-    var porcentajeNormal  = Math.round((100 - porcentajeFalla) * 100) / 100;
+    var nombresCausas = {
+        "calidad_producto":    "Calidad del producto",
+        "estado_entrega":      "Estado al entregar",
+        "no_es_lo_descrito":   "No era lo descrito",
+        "problemas_software":  "Software / conectividad",
+        "olor_sustancias":     "Olor / sustancias",
+        "devolucion_explicita":"Devolución explícita",
+        "sin_causa":           "Sin causa clara"
+    };
 
+    var nombresTipos = {
+        "auriculares":  "Auriculares / Audio",
+        "camaras":      "Cámaras",
+        "cables":       "Cables / Cargadores",
+        "computadoras": "Computadoras",
+        "telefonia":    "Telefonía",
+        "redes":        "Redes",
+        "baterias":     "Baterías",
+        "smartwatch":   "Smartwatch",
+        "otro":         "Título genérico"
+    };
+
+    var colores       = ['#38bdf8','#818cf8','#34d399','#fb923c','#f472b6','#a78bfa','#4ade80'];
+    var coloresRating = ['#ef4444','#f97316','#eab308','#22c55e','#38bdf8'];
+
+    // Opciones base que comparten todas las gráficas de barras
+    function opcionesBarras(horizontal) {
+        return {
+            responsive: true,
+            maintainAspectRatio: false,   // ← respeta la altura del .grafica-wrap
+            indexAxis: horizontal ? 'y' : 'x',
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { ticks: { color: '#94a3b8', font: { size: 11 } }, grid: { color: horizontal ? 'rgba(255,255,255,0.05)' : 'transparent' } },
+                y: { ticks: { color: '#94a3b8', font: { size: 11 } }, grid: { color: horizontal ? 'transparent' : 'rgba(255,255,255,0.05)' } }
+            }
+        };
+    }
+
+    // --- Gráfica 1: Causas (barras horizontales) ---
+    var datosCausas = {{ mining.causas_principales | tojson }};
+    new Chart(document.getElementById('graficaCausas').getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: Object.keys(datosCausas).map(function(k){ return nombresCausas[k] || k; }),
+            datasets: [{ data: Object.values(datosCausas), backgroundColor: colores, borderRadius: 5, borderSkipped: false }]
+        },
+        options: opcionesBarras(true)
+    });
+
+    // --- Gráfica 2: Dona ---
+    var porcentajeFalla  = {{ mining.porcentaje_fallas }};
+    var porcentajeNormal = Math.round((100 - porcentajeFalla) * 100) / 100;
     new Chart(document.getElementById('graficaFallas').getContext('2d'), {
         type: 'doughnut',
         data: {
             labels: ['Sin falla (' + porcentajeNormal + '%)', 'Con falla (' + porcentajeFalla + '%)'],
-            datasets: [{
-                data: [porcentajeNormal, porcentajeFalla],
-                backgroundColor: ['#38bdf8', '#ef4444'],
-                borderWidth: 0,
-                hoverOffset: 8
-            }]
+            datasets: [{ data: [porcentajeNormal, porcentajeFalla], backgroundColor: ['#38bdf8', '#ef4444'], borderWidth: 0, hoverOffset: 8 }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: { color: '#94a3b8', font: { size: 13 } }
-                }
-            }
+            plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 12 } } } }
         }
+    });
+
+    // --- Gráfica 3: Tipo de producto ---
+    var datosTipos = {{ mining.fallas_por_tipo | tojson }};
+    new Chart(document.getElementById('graficaTipos').getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: Object.keys(datosTipos).map(function(k){ return nombresTipos[k] || k; }),
+            datasets: [{ data: Object.values(datosTipos), backgroundColor: '#38bdf8', borderRadius: 5, borderSkipped: false }]
+        },
+        options: opcionesBarras(false)
+    });
+
+    // --- Gráfica 4: Fallas por rating ---
+    var datosFallasRating = {{ mining.fallas_por_rating | tojson }};
+    new Chart(document.getElementById('graficaRatingFalla').getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: Object.keys(datosFallasRating).map(function(k){ return k + ' ★'; }),
+            datasets: [{ data: Object.values(datosFallasRating), backgroundColor: coloresRating, borderRadius: 5, borderSkipped: false }]
+        },
+        options: opcionesBarras(false)
     });
 </script>
 

@@ -5,12 +5,33 @@
     <title>Inicio — Dashboard Electrónica</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        /* Dos columnas para las gráficas — igual que analisis y reportes */
+        .fila-graficas {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin: 24px 0;
+        }
+
+        /* Contenedor estándar de altura fija para TODAS las gráficas */
+        .grafica-wrap {
+            position: relative;
+            height: 280px;
+            width: 100%;
+        }
+
+        @media (max-width: 900px) {
+            .fila-graficas { grid-template-columns: 1fr; }
+        }
+    </style>
 </head>
 <body>
 
 <div class="contenedor">
 
-    <!-- ===================== BARRA LATERAL ===================== -->
+    <!-- BARRA LATERAL -->
     <aside class="sidebar">
         <h2>Navegación</h2>
         <ul>
@@ -20,7 +41,7 @@
         </ul>
     </aside>
 
-    <!-- ===================== CONTENIDO PRINCIPAL ===================== -->
+    <!-- CONTENIDO PRINCIPAL -->
     <main class="contenido">
 
         <h1>Análisis de Fallas en Electrónica Amazon</h1>
@@ -52,37 +73,48 @@
             </div>
         </div>
 
+        <!-- GRÁFICAS: dona + barras con altura controlada -->
         <div class="fila-graficas">
-            <!-- GRÁFICA DONA -->
-              <div class="grafica-card">
-                 <h3>¿Cómo califican los compradores?</h3>
-                  <p style="margin-bottom: 20px;"> La mayoría de reseñas son positivas, pero el {{ mining.porcentaje_fallas }}% reporta algún tipo de defecto. </p>
-                   <div class="contenedor-grafica-pastel"> <canvas id="graficaInicio"></canvas>
-                 </div> </div>
-                  <!-- GRÁFICA BARRAS -->
-                    <div class="grafica-card">
-                         <h3>Distribución de calificaciones</h3>
-                          <p style="margin-bottom: 20px;"> El 65.9% de las reseñas corresponden a productos con 5 estrellas. </p>
-                           <div class="contenedor-grafica">
-                             <canvas id="graficaBarras"></canvas>
-                            </div>
-                    </div>
-                 </div>
+            <div class="tarjeta">
+                <h3>¿Cómo califican los compradores?</h3>
+                <p style="margin-bottom: 16px; font-size: 13px;">
+                    La mayoría de reseñas son positivas, pero el
+                    {{ mining.porcentaje_fallas }}% reporta algún tipo de defecto.
+                </p>
+                <div class="grafica-wrap">
+                    <canvas id="graficaInicio"></canvas>
+                </div>
+            </div>
+            <div class="tarjeta">
+                <h3>Distribución de calificaciones</h3>
+                <p style="margin-bottom: 16px; font-size: 13px;">
+                    El 65.9% de las reseñas corresponden a productos con 5 estrellas.
+                </p>
+                <div class="grafica-wrap">
+                    <canvas id="graficaBarras"></canvas>
+                </div>
+            </div>
+        </div>
+
         <!-- PIPELINE DEL PROYECTO -->
-        <div class="tarjeta" style="padding: 34px 24px 24px 24px;">
-            <h3 style="margin-bottom: 18px;">Pipeline del proyecto</h3>
+        <div class="tarjeta">
+            <h3 style="margin-bottom: 14px;">Pipeline del proyecto</h3>
             <p>Del archivo comprimido de 6 GB hasta los datos que alimentan este dashboard:</p>
-            <div style="display:flex; gap: 16px; margin-top:28px; flex-wrap:wrap; align-items:center;">
+            <div style="display:flex; gap:16px; margin-top:20px; flex-wrap:wrap; align-items:center;">
                 <div style="background:#164e63;color:#7dd3fc;padding:10px 16px;border-radius:10px;font-size:13px;text-align:center;">
                     📦 Electronics.jsonl.gz<br><small style="color:#94a3b8;">6 GB · 43M filas</small>
                 </div>
                 <span style="color:#475569;font-size:20px;">→</span>
                 <div style="background:#1e293b;color:#e2e8f0;padding:10px 16px;border-radius:10px;font-size:13px;text-align:center;">
-                    🧹 Limpieza<br><small style="color:#94a3b8;">50,000 filas</small>
+                    🧹 Limpieza por chunks<br><small style="color:#94a3b8;">200,000 filas</small>
                 </div>
                 <span style="color:#475569;font-size:20px;">→</span>
                 <div style="background:#1e293b;color:#e2e8f0;padding:10px 16px;border-radius:10px;font-size:13px;text-align:center;">
                     🔍 Detección de fallas<br><small style="color:#94a3b8;">pattern matching</small>
+                </div>
+                <span style="color:#475569;font-size:20px;">→</span>
+                <div style="background:#1e293b;color:#e2e8f0;padding:10px 16px;border-radius:10px;font-size:13px;text-align:center;">
+                    🤖 Modelo predictivo<br><small style="color:#94a3b8;">regresión logística</small>
                 </div>
                 <span style="color:#475569;font-size:20px;">→</span>
                 <div style="background:#14532d;color:#86efac;padding:10px 16px;border-radius:10px;font-size:13px;text-align:center;">
@@ -100,60 +132,45 @@
     </main>
 </div>
 
-<!-- ===================== JAVASCRIPT PARA LA GRÁFICA ===================== -->
+<!-- JAVASCRIPT -->
 <script>
- var datosRatings = {{ ba.graficos.ratings | tojson }};
-  var etiquetas = Object.keys(datosRatings).map(function(k)
-   { return k + ' ★'; });
-    var valores = Object.values(datosRatings);
-     /* ========================= 
-     GRÁFICA DONA
-      ========================= */
-       new Chart(document.getElementById('graficaInicio').getContext('2d'),
-        { type: 'doughnut',
-         data: { labels: etiquetas,
-          datasets: [{ data: valores,
-           backgroundColor: [ '#ef4444', '#f97316', '#eab308', '#22c55e', '#38bdf8' ],
-            borderWidth: 0, hoverOffset: 8 }]
-             }, options: { responsive: true,
-              maintainAspectRatio: false,
-               plugins: { legend: { position:
-                'bottom', labels: { color:
-                 '#94a3b8', font:
-                  { size: 13
-                }
-             }
-        } 
-    } 
-    }
-});
- /* =========================
-  GRÁFICA BARRAS
-   ========================= */
-    new Chart(document.getElementById('graficaBarras').getContext('2d'),
-     { type: 'bar', data: { labels: etiquetas, datasets:
-      [{ label: 'Cantidad de reseñas', data:
-       valores, backgroundColor:
-        [ '#ef4444', '#f97316', '#eab308', '#22c55e', '#38bdf8' ],
-         borderRadius: 8 }] }, options:
-          { responsive: true, maintainAspectRatio: false,
-           plugins: { legend: { labels:
-            { color: '#94a3b8' }
-             }
-              },
-               scales:
-                { x: { ticks:
-                 { color: '#94a3b8' },
-                  grid:
-                   { color: 'rgba(255,255,255,0.04)' }
-                    }, y: { ticks: { color: '#94a3b8' },
-                     grid:
-                      {
-                         color:
-                          'rgba(255,255,255,0.04)'
-                           } 
-                    } 
-                } 
-                 }
-            }); 
- </script>
+    var datosRatings = {{ ba.graficos.ratings | tojson }};
+    var etiquetas    = Object.keys(datosRatings).map(function(k){ return k + ' ★'; });
+    var valores      = Object.values(datosRatings);
+    var colores      = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#38bdf8'];
+
+    // --- Dona ---
+    new Chart(document.getElementById('graficaInicio').getContext('2d'), {
+        type: 'doughnut',
+        data: {
+            labels: etiquetas,
+            datasets: [{ data: valores, backgroundColor: colores, borderWidth: 0, hoverOffset: 8 }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 12 } } } }
+        }
+    });
+
+    // --- Barras ---
+    new Chart(document.getElementById('graficaBarras').getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: etiquetas,
+            datasets: [{ data: valores, backgroundColor: colores, borderRadius: 6, borderSkipped: false }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { ticks: { color: '#94a3b8' }, grid: { display: false } },
+                y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+            }
+        }
+    });
+</script>
+
+</body>
+</html>

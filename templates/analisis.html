@@ -5,91 +5,216 @@
     <title>Business Analytics — Dashboard Electrónica</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        /* Dos columnas para las gráficas */
+        .fila-graficas {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        /* Altura fija para que no sean enormes */
+        .grafica-card canvas {
+            max-height: 220px;
+        }
+
+        /* En pantallas pequeñas, una sola columna */
+        @media (max-width: 900px) {
+            .fila-graficas { grid-template-columns: 1fr; }
+        }
+
+        /* Etiqueta de tipo de análisis */
+        .tipo-analisis {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            padding: 3px 10px;
+            border-radius: 20px;
+            margin-bottom: 10px;
+        }
+        .tag-descriptivo  { background: rgba(56,189,248,0.15);  color: #38bdf8; }
+        .tag-exploratorio { background: rgba(52,211,153,0.15);  color: #34d399; }
+        .tag-predictivo   { background: rgba(251,146,60,0.15);  color: #fb923c; }
+
+        /* Barra de precisión del modelo */
+        .barra-wrap { background: rgba(255,255,255,0.06); border-radius: 8px; height: 12px; margin: 8px 0; }
+        .barra-fill { height: 12px; border-radius: 8px; background: #fb923c; transition: width 1s; }
+    </style>
 </head>
 <body>
 
 <div class="contenedor">
 
-    <!-- ===================== BARRA LATERAL ===================== -->
+    <!-- BARRA LATERAL -->
     <aside class="sidebar">
         <h2>Navegación</h2>
         <ul>
-            <li><a href="/"                       >Inicio</a></li>
+            <li><a href="/">Inicio</a></li>
             <li><a href="/analisis" class="activo">Business Analytics</a></li>
-            <li><a href="/reportes"               >Minería de Datos</a></li>
+            <li><a href="/reportes">Minería de Datos</a></li>
         </ul>
     </aside>
 
-    <!-- ===================== CONTENIDO PRINCIPAL ===================== -->
+    <!-- CONTENIDO -->
     <main class="contenido">
 
         <h1>Business Analytics</h1>
         <p>
-            Indicadores clave de negocio extraídos de las
-            <strong>{{ ba.kpis.total_reviews }}</strong> reseñas analizadas.
-            Permiten entender la satisfacción del consumidor y los volúmenes
-            de actividad a lo largo del tiempo.
+            Análisis de las <strong>{{ ba.kpis.total_reviews }}</strong> reseñas procesadas,
+            organizado en tres niveles: <strong>descriptivo</strong> (qué pasó),
+            <strong>exploratorio</strong> (qué relaciones hay) y
+            <strong>predictivo</strong> (qué puede pasar).
         </p>
 
-        <!-- KPIs -->
-        <div class="kpi-fila">
-            <div class="kpi">
-                <div class="numero">{{ ba.kpis.promedio_rating }}</div>
-                <div class="etiqueta">Rating promedio</div>
+        <!-- ================================================
+             ANÁLISIS DESCRIPTIVO
+             ¿Qué pasó? — KPIs y distribuciones básicas
+             ================================================ -->
+        <div class="tarjeta" style="margin-top: 24px;">
+            <span class="tipo-analisis tag-descriptivo">Análisis Descriptivo</span>
+            <h2>¿Qué pasó? — Resumen del dataset</h2>
+            <p style="margin-bottom: 18px;">
+                Métricas generales que describen el comportamiento de los consumidores
+                en el segmento de electrónica durante el período analizado.
+            </p>
+
+            <!-- KPIs -->
+            <div class="kpi-fila">
+                <div class="kpi">
+                    <div class="numero">{{ ba.kpis.promedio_rating }}</div>
+                    <div class="etiqueta">Rating promedio</div>
+                </div>
+                <div class="kpi">
+                    <div class="numero">{{ ba.kpis.total_reviews }}</div>
+                    <div class="etiqueta">Total reseñas</div>
+                </div>
+                <div class="kpi">
+                    <div class="numero">{{ ba.kpis.porcentaje_verificados }}%</div>
+                    <div class="etiqueta">Compras verificadas</div>
+                </div>
             </div>
-            <div class="kpi">
-                <div class="numero">{{ ba.kpis.total_reviews }}</div>
-                <div class="etiqueta">Total reseñas</div>
+
+            <!-- Gráficas descriptivas: distribución + tiempo -->
+            <div class="fila-graficas" style="margin-top: 16px;">
+                <div class="grafica-card">
+                    <h3>Distribución de calificaciones</h3>
+                    <p style="margin-bottom:12px; font-size:13px;">
+                        El 65.9% de reseñas son de 5★. El 12.5% son negativas (1–2★),
+                        donde se concentran las fallas.
+                    </p>
+                    <canvas id="graficaBarras"></canvas>
+                </div>
+                <div class="grafica-card">
+                    <h3>Volumen de reseñas por mes</h3>
+                    <p style="margin-bottom:12px; font-size:13px;">
+                        Pico en julio 2022. Caída en feb–mar 2023,
+                        posiblemente por fin de temporada navideña.
+                    </p>
+                    <canvas id="graficaTiempo"></canvas>
+                </div>
             </div>
-            <div class="kpi">
-                <div class="numero">{{ ba.kpis.porcentaje_verificados }}%</div>
-                <div class="etiqueta">Compras verificadas</div>
+
+            <div class="insight">
+                <strong>Interpretación descriptiva:</strong>
+                El rating promedio de {{ ba.kpis.promedio_rating }}/5 y el {{ ba.kpis.porcentaje_verificados }}%
+                de compras verificadas indican alta satisfacción general y buena validez estadística de los datos.
             </div>
         </div>
 
-        <!-- GRÁFICA 1: distribución de ratings -->
-        <div class="fila-graficas">
+        <!-- ================================================
+             ANÁLISIS EXPLORATORIO
+             ¿Qué relaciones hay? — Cruce de variables
+             ================================================ -->
+        <div class="tarjeta">
+            <span class="tipo-analisis tag-exploratorio">Análisis Exploratorio</span>
+            <h2>¿Qué relaciones hay? — Cruce de variables</h2>
+            <p style="margin-bottom: 18px;">
+                Exploración de la relación entre el rating del producto, el mes del año
+                y la probabilidad de reportar una falla.
+            </p>
 
-    <!-- GRÁFICA 1 -->
-    <div class="tarjeta grafica-card">
+            <div class="fila-graficas">
+                <div class="grafica-card">
+                    <h3>Tasa de falla por nivel de rating</h3>
+                    <p style="margin-bottom:12px; font-size:13px;">
+                        ¿Las reseñas de menor calificación reportan más fallas?
+                        Este gráfico muestra el % de reseñas con falla dentro de cada rating.
+                    </p>
+                    <canvas id="graficaTasaRating"></canvas>
+                </div>
+                <div class="grafica-card">
+                    <h3>Fallas detectadas por mes del año</h3>
+                    <p style="margin-bottom:12px; font-size:13px;">
+                        ¿Existe estacionalidad en las fallas?
+                        Se compara el volumen de fallas mes a mes.
+                    </p>
+                    <canvas id="graficaMes"></canvas>
+                </div>
+            </div>
 
-        <h3>Distribución de calificaciones (1 a 5 estrellas)</h3>
-
-        <p style="margin-bottom: 18px;">
-            La mayoría de las reseñas son de 5 estrellas (65.9%), lo que indica alta satisfacción general.
-            El 12.5% son negativas (1–2★), que es donde se concentran las fallas reportadas.
-        </p>
-
-        <div class="grafica-mediana">
-            <canvas id="graficaBarras"></canvas>
+            <div class="insight" style="border-color: #34d399;">
+                <strong>Interpretación exploratoria:</strong>
+                Se observa una correlación clara entre rating bajo y tasa de falla alta.
+                Las reseñas de 1★ presentan la mayor concentración de defectos reportados,
+                lo que confirma que el rating es un indicador útil para detectar problemas.
+            </div>
         </div>
 
-    </div>
+        <!-- ================================================
+             ANÁLISIS PREDICTIVO
+             ¿Qué puede pasar? — Modelo y proyección
+             ================================================ -->
+        <div class="tarjeta">
+            <span class="tipo-analisis tag-predictivo">Análisis Predictivo</span>
+            <h2>¿Qué puede pasar? — Modelo y proyección</h2>
+            <p style="margin-bottom: 18px;">
+                Modelo de regresión logística entrenado para predecir la probabilidad
+                de falla de un producto según su rating y el mes de compra.
+                {{ ba.predictivo.nota }}
+            </p>
 
+            <!-- Precisión del modelo -->
+            <div style="margin-bottom: 20px;">
+                <p style="font-size: 13px; margin-bottom: 6px;">
+                    <strong>Precisión del modelo:</strong>
+                    {{ ba.predictivo.precision_modelo }}% de acierto en datos de prueba
+                </p>
+                <div class="barra-wrap">
+                    <div class="barra-fill" id="barraModelo"
+                         style="width: {{ ba.predictivo.precision_modelo }}%"></div>
+                </div>
+            </div>
 
-    <!-- GRÁFICA 2 -->
-    <div class="tarjeta grafica-card">
+            <div class="fila-graficas">
+                <div class="grafica-card">
+                    <h3>Probabilidad de falla predicha por rating</h3>
+                    <p style="margin-bottom:12px; font-size:13px;">
+                        El modelo predice que las reseñas de 1★ tienen mayor probabilidad
+                        de reportar falla. Los valores son % de probabilidad estimada.
+                    </p>
+                    <canvas id="graficaPrediccion"></canvas>
+                </div>
+                <div class="grafica-card">
+                    <h3>Proyección de fallas — próximos 3 meses</h3>
+                    <p style="margin-bottom:12px; font-size:13px;">
+                        Tendencia proyectada basada en la pendiente de los últimos 6 meses
+                        del dataset. Línea punteada = proyección.
+                    </p>
+                    <canvas id="graficaProyeccion"></canvas>
+                </div>
+            </div>
 
-        <h3>Volumen de reseñas por mes (Abr 2022 – Mar 2023)</h3>
-
-        <p style="margin-bottom: 18px;">
-            Se observa un pico en julio 2022 (631 reseñas) y una caída en feb–mar 2023,
-            posiblemente por el fin de la temporada navideña.
-        </p>
-
-        <div class="grafica-mediana">
-            <canvas id="graficaTiempo"></canvas>
-        </div>
-
-    </div>
-
-</div>
-        <!-- INTERPRETACIÓN -->
-        <div class="insight">
-            <strong>Interpretación:</strong>
-            El índice de satisfacción de {{ ba.kpis.promedio_rating }}/5 está impulsado por la alta concentración
-            de reseñas de 5★. El {{ ba.kpis.porcentaje_verificados }}% de compras verificadas fortalece
-            la validez estadística de estos KPIs, ya que provienen de compradores reales confirmados por Amazon.
+            <div class="insight" style="border-color: #fb923c;">
+                <strong>Interpretación predictiva:</strong>
+                El modelo confirma que el rating es el predictor más fuerte de falla.
+                Un producto con 1★ tiene una probabilidad significativamente mayor de
+                haber sido defectuoso o devuelto. La proyección de tendencia permite
+                anticipar períodos de mayor volumen de fallas.
+            </div>
         </div>
 
         <div class="referencia">
@@ -103,23 +228,21 @@
 
 <!-- ===================== JAVASCRIPT ===================== -->
 <script>
-    // --- Gráfica 1: Barras ---
-    // | tojson convierte el dict de Python a objeto JavaScript
+    // Colores reutilizables
+    var coloresRating = ['#ef4444','#f97316','#eab308','#22c55e','#38bdf8'];
+
+    // -----------------------------------------------
+    // DESCRIPTIVO: Barras de distribución de ratings
+    // -----------------------------------------------
     var datosRatings = {{ ba.graficos.ratings | tojson }};
-
-    var etiquetas = Object.keys(datosRatings).map(function(k) { return k + ' ★'; });
-    var valores   = Object.values(datosRatings);
-    var colores   = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#38bdf8'];
-
     new Chart(document.getElementById('graficaBarras').getContext('2d'), {
         type: 'bar',
         data: {
-            labels: etiquetas,
+            labels: Object.keys(datosRatings).map(function(k){ return k+' ★'; }),
             datasets: [{
-                label: 'Cantidad de reseñas',
-                data: valores,
-                backgroundColor: colores,
-                borderRadius: 6,
+                data: Object.values(datosRatings),
+                backgroundColor: coloresRating,
+                borderRadius: 5,
                 borderSkipped: false
             }]
         },
@@ -134,32 +257,184 @@
         }
     });
 
-    // --- Gráfica 2: Línea de tiempo ---
+    // -----------------------------------------------
+    // DESCRIPTIVO: Línea de tiempo mensual
+    // -----------------------------------------------
     var datosTiempo = {{ ba.graficos.tiempo | tojson }};
-
-    var meses  = Object.keys(datosTiempo);
-    var counts = Object.values(datosTiempo);
-
     new Chart(document.getElementById('graficaTiempo').getContext('2d'), {
         type: 'line',
         data: {
-            labels: meses,
+            labels: Object.keys(datosTiempo),
             datasets: [{
-                label: 'Reseñas por mes',
-                data: counts,
+                data: Object.values(datosTiempo),
                 borderColor: '#38bdf8',
-                backgroundColor: 'rgba(56, 189, 248, 0.1)',
-                fill: true,
-                tension: 0.3,
-                pointRadius: 4,
-                pointBackgroundColor: '#38bdf8'
+                backgroundColor: 'rgba(56,189,248,0.1)',
+                fill: true, tension: 0.3,
+                pointRadius: 3, pointBackgroundColor: '#38bdf8'
             }]
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { display: false } },
+                y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' }, min: 0 }
+            }
+        }
+    });
+
+    // -----------------------------------------------
+    // EXPLORATORIO: Tasa de falla por rating
+    // -----------------------------------------------
+    var datosTasa = {{ ba.exploratorio.tasa_falla_por_rating | tojson }};
+    new Chart(document.getElementById('graficaTasaRating').getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: Object.keys(datosTasa).map(function(k){ return k+' ★'; }),
+            datasets: [{
+                data: Object.values(datosTasa),
+                backgroundColor: coloresRating,
+                borderRadius: 5,
+                borderSkipped: false
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
             plugins: { legend: { display: false } },
             scales: {
                 x: { ticks: { color: '#94a3b8' }, grid: { display: false } },
+                y: {
+                    ticks: { color: '#94a3b8', callback: function(v){ return v+'%'; } },
+                    grid: { color: 'rgba(255,255,255,0.05)' }
+                }
+            }
+        }
+    });
+
+    // -----------------------------------------------
+    // EXPLORATORIO: Fallas por mes del año
+    // -----------------------------------------------
+    var datosMes = {{ ba.exploratorio.fallas_por_mes | tojson }};
+    var nombresMes = {
+        "1":"Ene","2":"Feb","3":"Mar","4":"Abr","5":"May","6":"Jun",
+        "7":"Jul","8":"Ago","9":"Sep","10":"Oct","11":"Nov","12":"Dic"
+    };
+    new Chart(document.getElementById('graficaMes').getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: Object.keys(datosMes).map(function(k){ return nombresMes[k]||k; }),
+            datasets: [{
+                data: Object.values(datosMes),
+                backgroundColor: '#34d399',
+                borderRadius: 5,
+                borderSkipped: false
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { ticks: { color: '#94a3b8' }, grid: { display: false } },
+                y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+            }
+        }
+    });
+
+    // -----------------------------------------------
+    // PREDICTIVO: Probabilidad de falla por rating
+    // -----------------------------------------------
+    var datosProb = {{ ba.predictivo.probabilidades_falla | tojson }};
+    new Chart(document.getElementById('graficaPrediccion').getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: Object.keys(datosProb).map(function(k){ return k+' ★'; }),
+            datasets: [{
+                label: 'Probabilidad de falla (%)',
+                data: Object.values(datosProb),
+                backgroundColor: coloresRating,
+                borderRadius: 5,
+                borderSkipped: false
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { ticks: { color: '#94a3b8' }, grid: { display: false } },
+                y: {
+                    ticks: { color: '#94a3b8', callback: function(v){ return v+'%'; } },
+                    grid: { color: 'rgba(255,255,255,0.05)' },
+                    max: 100, min: 0
+                }
+            }
+        }
+    });
+
+    // -----------------------------------------------
+    // PREDICTIVO: Proyección de tendencia
+    // Mostramos los últimos 6 meses reales + 3 proyectados
+    // -----------------------------------------------
+    var datosFechas    = {{ ba.graficos.tiempo | tojson }};
+    var datosProyeccion = {{ ba.predictivo.tendencia_proximos_meses | tojson }};
+
+    // Tomamos los últimos 6 meses del histórico
+    var fechasHist  = Object.keys(datosFechas).slice(-6);
+    var valoresHist = fechasHist.map(function(f){ return datosFechas[f]; });
+
+    var fechasProy  = Object.keys(datosProyeccion);
+    var valoresProy = Object.values(datosProyeccion);
+
+    // Unimos etiquetas: histórico + proyección
+    var todasFechas  = fechasHist.concat(fechasProy);
+    // Dataset 1: línea real (solo los 6 históricos, null para el resto)
+    var serieReal    = valoresHist.concat(fechasProy.map(function(){ return null; }));
+    // Dataset 2: línea proyectada (null para los históricos, valores para proyección)
+    //   El primer punto de la proyección lo conectamos con el último histórico
+    var serieProy    = fechasHist.map(function(){ return null; });
+    serieProy[serieProy.length - 1] = valoresHist[valoresHist.length - 1]; // punto de conexión
+    serieProy = serieProy.concat(valoresProy);
+
+    new Chart(document.getElementById('graficaProyeccion').getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: todasFechas,
+            datasets: [
+                {
+                    label: 'Histórico',
+                    data: serieReal,
+                    borderColor: '#38bdf8',
+                    backgroundColor: 'rgba(56,189,248,0.1)',
+                    fill: true, tension: 0.3,
+                    pointRadius: 3, pointBackgroundColor: '#38bdf8',
+                    spanGaps: false
+                },
+                {
+                    label: 'Proyección',
+                    data: serieProy,
+                    borderColor: '#fb923c',
+                    borderDash: [6, 4],       // línea punteada
+                    backgroundColor: 'transparent',
+                    tension: 0.3,
+                    pointRadius: 4, pointBackgroundColor: '#fb923c',
+                    spanGaps: true
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    labels: { color: '#94a3b8', font: { size: 11 } }
+                }
+            },
+            scales: {
+                x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { display: false } },
                 y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' }, min: 0 }
             }
         }
